@@ -6,27 +6,27 @@
 #include <iostream>
 #include <thread>
 
-void OnOpening(System::Object^ sender, System::EventArgs^ e)
+static void OnOpening(System::Object^ sender, System::EventArgs^ e)
 {
     std::cout << "OnOpening\n";
 }
 
-void OnOpened(System::Object^ sender, System::EventArgs^ e)
+static void OnOpened(System::Object^ sender, System::EventArgs^ e)
 {
     std::cout << "OnOpened\n";
 }
 
-void OnFaulted(System::Object^ sender, System::EventArgs^ e)
+static void OnFaulted(System::Object^ sender, System::EventArgs^ e)
 {
     std::cout << "OnFaulted\n";
 }
 
-void OnClosing(System::Object^ sender, System::EventArgs^ e)
+static void OnClosing(System::Object^ sender, System::EventArgs^ e)
 {
     std::cout << "OnClosing\n";
 }
 
-void OnClosed(System::Object^ sender, System::EventArgs^ e)
+static void OnClosed(System::Object^ sender, System::EventArgs^ e)
 {
     std::cout << "OnClosed\n";
 }
@@ -49,11 +49,11 @@ System::ServiceModel::NetTcpBinding^ CreateTCPBinding() {
     binding->MaxReceivedMessageSize = std::numeric_limits<int32_t>::max();
     binding->MaxBufferSize = std::numeric_limits<int32_t>::max();
     binding->MaxBufferPoolSize = std::numeric_limits<int32_t>::max();
-    //binding->ReaderQuotas->MaxArrayLength = std::numeric_limits<int32_t>::max();
-    //binding->ReaderQuotas->MaxBytesPerRead = std::numeric_limits<int32_t>::max();
-    //binding->ReaderQuotas->MaxDepth = std::numeric_limits<int32_t>::max();
-    //binding->ReaderQuotas->MaxNameTableCharCount = std::numeric_limits<int32_t>::max();
-    //binding->ReaderQuotas->MaxStringContentLength = std::numeric_limits<int32_t>::max();
+    binding->ReaderQuotas->MaxArrayLength = std::numeric_limits<int32_t>::max();
+    binding->ReaderQuotas->MaxBytesPerRead = std::numeric_limits<int32_t>::max();
+    binding->ReaderQuotas->MaxDepth = std::numeric_limits<int32_t>::max();
+    binding->ReaderQuotas->MaxNameTableCharCount = std::numeric_limits<int32_t>::max();
+    binding->ReaderQuotas->MaxStringContentLength = std::numeric_limits<int32_t>::max();
     binding->ReliableSession->Enabled = false;
     binding->ReliableSession->Ordered = false;
     binding->ReceiveTimeout = System::TimeSpan(0, 8, 0, 2);
@@ -65,11 +65,11 @@ System::ServiceModel::NetTcpBinding^ CreateTCPBinding() {
 
 int main(array<System::String ^> ^args)
 {
-    System::String^ traderId = gcnew System::String(Secret::traderId.data());
-    System::String^ password = gcnew System::String(Secret::password.data());
+    System::String^ traderId = gcnew System::String(Secret::traderId);
+    System::String^ password = gcnew System::String(Secret::password);
     System::String^ hash = GenerateMD5Hash(password);
-    System::String^ hostname = gcnew System::String(Secret::hostname.data());
-    System::String^ port = gcnew System::String(Secret::port.data());
+    System::String^ hostname = gcnew System::String(Secret::hostname);
+    System::String^ port = gcnew System::String(Secret::port);
 
     auto client = gcnew Client();
 
@@ -99,8 +99,3 @@ int main(array<System::String ^> ^args)
     
     return 0;
 }
-
-
-
-
-

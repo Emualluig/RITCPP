@@ -29,6 +29,9 @@
     <ClInclude Include="Client.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Secret_Template.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Secret.h">
       <Filter>Header Files</Filter>
     </ClInclude>
