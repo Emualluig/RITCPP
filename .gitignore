@@ -400,6 +400,6 @@ FodyWeavers.xsd
 x64/**
 
 # Secrets required for execution
-# **/Secret.h
-# Secret.h
-# Secret/**
+**/Secret.h
+Secret.h
+Secret/**
