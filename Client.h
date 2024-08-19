@@ -1,16 +1,20 @@
 #pragma once
 
+#include <queue>
+#include "GameState.h"
+
 [System::ServiceModel::CallbackBehaviorAttribute(ConcurrencyMode = System::ServiceModel::ConcurrencyMode::Multiple, UseSynchronizationContext = false)]
 public ref class Client : TTS::IClientCallbackService {
 private:
-	TTS::IClientService^ channel = nullptr;
+	int32_t ExpectedUpdateID = 0;
+	TTS::IClientService^ Channel = nullptr;
 public:
 	// Required for bi-directional communication
 	void SetChannel(TTS::IClientService^ channel) {
-		this->channel = channel;
+		this->Channel = channel;
 	}
 	TTS::IClientService^ GetChannel() {
-		return this->channel;
+		return this->Channel;
 	}
 	// Inherited via IClientCallbackService
 	virtual void Ping();

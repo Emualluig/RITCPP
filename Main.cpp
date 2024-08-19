@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "Client.h"
 #include "Secret.h"
 #include <cstdint>
@@ -96,6 +95,5 @@ int main(array<System::String ^> ^args)
         }
         std::this_thread::yield();
     }
-    
     return 0;
 }

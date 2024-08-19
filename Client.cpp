@@ -1,7 +1,7 @@
-#include "pch.h"
 #include "Client.h"
 #include <source_location>
 #include <iostream>
+#include <chrono>
 
 void Client::Ping()
 {
@@ -25,9 +25,11 @@ void Client::Sync(TTS::SyncState^ state)
 {
 	const std::source_location& location = std::source_location::current();
 	std::cout << location.function_name() << "\n";
-	if (this->channel != nullptr) {
+	bool sentSync = false;
+	if (this->Channel != nullptr) {
 		try {
-			channel->SyncReceived();
+			Channel->SyncReceived();
+			sentSync = true;
 		}
 		catch (System::Exception^ e) {
 			std::cout << "\tReceived Managed exception when calling channel->SyncReceived()\n";
@@ -42,12 +44,18 @@ void Client::Sync(TTS::SyncState^ state)
 		// this->channel == nullptr
 		std::cout << "\tUnable to get communication channel. this->channel == nullptr\n";
 	}
+	if (!sentSync) {
+		return;
+	}
 }
 
 void Client::OrderedUpdate(TTS::UpdateState^ state)
 {
 	const std::source_location& location = std::source_location::current();
 	std::cout << location.function_name() << "\n";
+	std::cout << "\tID:" << state->ID << "\n";
+
+	auto a = std::chrono::high_resolution_clock::now();
 }
 
 void Client::Reset(TTS::SyncState^ state)
