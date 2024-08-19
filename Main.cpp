@@ -70,7 +70,8 @@ int main(array<System::String ^> ^args)
     System::String^ hostname = gcnew System::String(Secret::hostname);
     System::String^ port = gcnew System::String(Secret::port);
 
-    auto client = gcnew Client();
+    auto state = Game::StateManager();
+    auto client = gcnew Client(&state);
 
     System::String^ endpoint = "net.tcp://" + hostname + ":" + port + "/TTSClientService";
     auto binding = CreateTCPBinding();

@@ -1,14 +1,42 @@
 #pragma once
 
-#include <queue>
 #include "GameState.h"
+#include <msclr\gcroot.h>
+#include <queue>
+#include <compare>
+#include <mutex>
+
+struct UpdateHolder {
+	int32_t ID;
+	msclr::gcroot<TTS::UpdateState^> update;
+	std::strong_ordering operator<=>(const UpdateHolder& rhs) const {
+		return this->ID <=> rhs.ID;
+	}
+};
 
 [System::ServiceModel::CallbackBehaviorAttribute(ConcurrencyMode = System::ServiceModel::ConcurrencyMode::Multiple, UseSynchronizationContext = false)]
 public ref class Client : TTS::IClientCallbackService {
 private:
-	int32_t ExpectedUpdateID = 0;
+	bool isSynced = false;
+	// Non-owning pointer
+	Game::StateManager* StateManager;
 	TTS::IClientService^ Channel = nullptr;
+private:
+	int32_t ExpectedUpdateID = 0;
+	using PriorityQueueType = std::priority_queue<UpdateHolder, std::vector<UpdateHolder>, std::less<>>;
+	PriorityQueueType* PriorityQueue = new PriorityQueueType();
+	std::mutex* PriorityQueueMutex = new std::mutex();
+	void SynchronizeOrderedUpdate(TTS::UpdateState^ update);
+	void HandleSynchronizedUpdate(TTS::UpdateState^ update);
 public:
+	// Ctor
+	Client(Game::StateManager* sm) : StateManager{ sm } {}
+	// Dtor
+	~Client() {
+		delete this->PriorityQueueMutex;
+		delete this->PriorityQueue;
+	}
+
 	// Required for bi-directional communication
 	void SetChannel(TTS::IClientService^ channel) {
 		this->Channel = channel;
