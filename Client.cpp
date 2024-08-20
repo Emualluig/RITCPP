@@ -102,129 +102,93 @@ static std::vector<Game::ContainmentUpdateMessage> getContainmentUpdateMessage(a
 }
 
 void Client::HandleSynchronizedUpdate(TTS::UpdateState^ update) {
-	constexpr const static int32_t DEFAULT_ALLOC_SIZE = 4;
-	auto us = std::unique_ptr<Game::UpdateState>(new Game::UpdateState{
-		.ID = update->ID,
-		.Period = update->Period,
-		.Tick = update->Tick,
-		.AddedOrders = nullptr,
-		.UpdatedOrders = nullptr,
-		.CancelledOrders = nullptr,
-		.UpdatedAssets = nullptr,
-		.UnleasedAssets = nullptr,
-		.UpdatedLast = nullptr,
-		.UpdatedVolume = nullptr,
-		.UpdatedVWAP = nullptr,
-		.UpdatedPortfolio = nullptr,
-		.UpdatedTradingLimits = nullptr,
-		.AddedTransactions = nullptr,
-		.AddedTimeAndSales = nullptr,
-		.UpdatedNLV = unwrapDecimal(update->UpdatedNLV),
-		.UpdatedSecurityNLV = nullptr,
-		.UpdatedElectricity = nullptr,
-		.UpdatedOTC = nullptr,
-		.UpdatedSecurityUnrealized = nullptr,
-		.AddedAssetLogItems = nullptr,
-		});
-	if (update->AddedOrders != nullptr) {
-		auto vec = new std::vector<Game::OrderAddMessage>(DEFAULT_ALLOC_SIZE);
-		for each (TTS::OrderAddMessage^% var in update->AddedOrders)
-		{
-			vec->push_back(Game::OrderAddMessage{
-				.ID = var->ID,
-				.Period = var->Period,
-				.Price = var->Price,
-				.Tick = var->Tick,
-				.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
-				.Timestamp = var->Timestamp,
-				.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
-				.Type = (Game::OrderType)(int32_t)var->Type,
-				.Volume = var->Volume,
-				.VolumeRemaining = var->VolumeRemaining,
-				.VWAP = var->VWAP,
-				});
+	{
+		auto guard = this->GameState->lock();
+
+		if (update->AddedOrders != nullptr) {
+			for each (TTS::OrderAddMessage ^ %var in update->AddedOrders)
+			{
+				this->GameState->AddOrders(Game::OrderAddMessage{
+					.ID = var->ID,
+					.Period = var->Period,
+					.Price = var->Price,
+					.Tick = var->Tick,
+					.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
+					.Timestamp = var->Timestamp,
+					.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
+					.Type = (Game::OrderType)(int32_t)var->Type,
+					.Volume = var->Volume,
+					.VolumeRemaining = var->VolumeRemaining,
+					.VWAP = var->VWAP,
+					});
+			}
 		}
-		us->AddedOrders = vec;
-	}
-	if (update->UpdatedOrders != nullptr) {
-		auto vec = new std::vector<Game::OrderUpdateMessage>(DEFAULT_ALLOC_SIZE);
-		for each (TTS::OrderUpdateMessage^% var in update->UpdatedOrders)
-		{
-			vec->push_back({
-				.ID = var->ID,
-				.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
-				.VolumeRemaining = var->VolumeRemaining,
-			});
+		if (update->UpdatedOrders != nullptr) {
+			for each (TTS::OrderUpdateMessage ^ %var in update->UpdatedOrders)
+			{
+				this->GameState->UpdatedOrder(Game::OrderUpdateMessage{
+					.ID = var->ID,
+					.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
+					.VolumeRemaining = var->VolumeRemaining,
+					});
+			}
 		}
-		us->UpdatedOrders = vec;
-	}
-	if (update->CancelledOrders != nullptr) {
-		auto vec = new std::vector<int32_t>(DEFAULT_ALLOC_SIZE);
-		for each (auto var in update->CancelledOrders)
-		{
-			vec->push_back(var);
+		if (update->CancelledOrders != nullptr) {
+			for each (auto var in update->CancelledOrders)
+			{
+				this->GameState->CancelledOrder(var);
+			}
 		}
-		us->CancelledOrders = vec;
-	}
-	if (update->UpdatedAssets != nullptr) {
-		auto vec = new std::vector<Game::AssetUpdateMessage>(DEFAULT_ALLOC_SIZE);
-		for each (TTS::AssetUpdateMessage^% var in update->UpdatedAssets)
-		{
-			vec->push_back({
-				.ID = var->ID,
-				.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
-				.StartLeasePeriod = unwrapInt(var->StartLeasePeriod),
-				.StartLeaseTick = unwrapInt(var->StartLeaseTick),
-				.NextLeasePeriod = unwrapInt(var->NextLeasePeriod),
-				.NextLeaseTick = unwrapInt(var->NextLeaseTick),
-				.ContainmentUsage = unwrapInt(var->ContainmentUsage),
-				.ConvertFrom = getTickerWeight(var->ConvertFrom),
-				.ConvertTo = getTickerWeight(var->ConvertTo),
-				.ConvertFinishTick = unwrapInt(var->ConvertFinishTick),
-				.Realized = var->Realized,
-				.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID)
-			});
+		if (update->UpdatedAssets != nullptr) {
+			for each (TTS::AssetUpdateMessage ^ %var in update->UpdatedAssets)
+			{
+				this->GameState->UpdateAsset(Game::AssetUpdateMessage{
+					.ID = var->ID,
+					.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
+					.StartLeasePeriod = unwrapInt(var->StartLeasePeriod),
+					.StartLeaseTick = unwrapInt(var->StartLeaseTick),
+					.NextLeasePeriod = unwrapInt(var->NextLeasePeriod),
+					.NextLeaseTick = unwrapInt(var->NextLeaseTick),
+					.ContainmentUsage = unwrapInt(var->ContainmentUsage),
+					.ConvertFrom = getTickerWeight(var->ConvertFrom),
+					.ConvertTo = getTickerWeight(var->ConvertTo),
+					.ConvertFinishTick = unwrapInt(var->ConvertFinishTick),
+					.Realized = var->Realized,
+					.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID)
+					});
+			}
 		}
-		us->UpdatedAssets = vec;
-	}
-	if (update->UnleasedAssets != nullptr) {
-		auto vec = new std::vector<int32_t>(DEFAULT_ALLOC_SIZE);
-		for each (auto var in update->UnleasedAssets)
-		{
-			vec->push_back(var);
+		if (update->UnleasedAssets != nullptr) {
+			for each (auto var in update->UnleasedAssets)
+			{
+				this->GameState->UnleaseAsset(var);
+			}
 		}
-		us->UnleasedAssets = vec;
-	}
-	if (update->AddedAssetLogItems != nullptr) {
-		auto vec = new std::vector<Game::AssetLogUpdateMessage>(DEFAULT_ALLOC_SIZE);
-		for each (TTS::AssetLogUpdateMessage^% var in update->AddedAssetLogItems)
-		{
-			vec->push_back({
-				.ID = var->ID,
-				.Period = var->Period,
-				.Tick = var->Tick,
-				.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
-				.Type = (Game::AssetActionType)(int32_t)var->Type,
-				.Price = unwrapDecimal(var->Price),
-				.ConvertFrom = getTickerWeight(var->ConvertFrom),
-				.ConvertTo = getTickerWeight(var->ConvertTo),
-				.ConvertFromPrice = getTickerWeight(var->ConvertFromPrice),
-				.ConvertToPrice = getTickerWeight(var->ConvertToPrice),
-				.Timestamp = var->Timestamp,
-				.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
-				.Description = msclr::interop::marshal_as<std::string>(var->Description)
-			});
+		if (update->AddedAssetLogItems != nullptr) {
+			for each (TTS::AssetLogUpdateMessage ^ %var in update->AddedAssetLogItems)
+			{
+				this->GameState->AddAssetLogItems(Game::AssetLogUpdateMessage{
+					.ID = var->ID,
+					.Period = var->Period,
+					.Tick = var->Tick,
+					.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
+					.Type = (Game::AssetActionType)(int32_t)var->Type,
+					.Price = unwrapDecimal(var->Price),
+					.ConvertFrom = getTickerWeight(var->ConvertFrom),
+					.ConvertTo = getTickerWeight(var->ConvertTo),
+					.ConvertFromPrice = getTickerWeight(var->ConvertFromPrice),
+					.ConvertToPrice = getTickerWeight(var->ConvertToPrice),
+					.Timestamp = var->Timestamp,
+					.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
+					.Description = msclr::interop::marshal_as<std::string>(var->Description)
+					});
+			}
 		}
-		us->AddedAssetLogItems = vec;
-	}
-	if (update->UpdatedPortfolio != nullptr) {
-		auto map = new std::map<std::string, Game::PortfolioUpdateMessage>();
-		for each (auto% var in update->UpdatedPortfolio)
-		{
-			auto% value = var.Value;
-			map->insert({
-				msclr::interop::marshal_as<std::string>(var.Key),
-				{
+		if (update->UpdatedPortfolio != nullptr) {
+			for each (auto % var in update->UpdatedPortfolio)
+			{
+				auto% value = var.Value;
+				this->GameState->UpdatePortfolio(msclr::interop::marshal_as<std::string>(var.Key), Game::PortfolioUpdateMessage{
 					.Ticker = msclr::interop::marshal_as<std::string>(value->Ticker),
 					.Position = value->Position,
 					.VWAP = value->VWAP,
@@ -232,140 +196,86 @@ void Client::HandleSynchronizedUpdate(TTS::UpdateState^ update) {
 					.UpdatedContainments = getContainmentUpdateMessage(value->UpdatedContainments),
 					.PendingPosition = value->PendingPosition,
 					.Volume = value->Volume,
-				}
-			});
+					});
+			}
 		}
-		us->UpdatedPortfolio = map;
-	}
-	if (update->UpdatedTradingLimits != nullptr) {
-		auto map = new std::map<std::string, Game::TradingLimitUpdateMessage>();
-		for each (auto% var in update->UpdatedTradingLimits)
-		{
-			auto% value = var.Value;
-			map->insert({
-				msclr::interop::marshal_as<std::string>(var.Key),
-				{
+		if (update->UpdatedTradingLimits != nullptr) {
+			for each (auto % var in update->UpdatedTradingLimits)
+			{
+				auto% value = var.Value;
+				this->GameState->UpdateTradingLimits(msclr::interop::marshal_as<std::string>(var.Key), Game::TradingLimitUpdateMessage{
 					.Name = msclr::interop::marshal_as<std::string>(value->Name),
 					.Gross = value->Gross,
 					.Net = value->Net,
-				}
-			});
+					});
+			}
 		}
-		us->UpdatedTradingLimits = map;
-	}
-	if (update->AddedTransactions != nullptr) {
-		auto vec = new std::vector<Game::TransactionAddMessage>();
-		for each (auto% var in update->AddedTransactions)
-		{
-			vec->push_back({
-				.ID = var->ID,
-				.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
-				.Price = unwrapDecimal(var->Price),
-				.Quantity = unwrapDecimal(var->Quantity),
-				.Type = (Game::TransactionType)(int32_t)var->Type,
-				.Value = var->Value,
-				.Currency = msclr::interop::marshal_as<std::string>(var->Currency),
-				.Balance = var->Balance,
-				.Period = var->Period,
-				.Tick = var->Tick,
-				.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
-				.TypeInteger = var->TypeInteger,
-			});
+		if (update->AddedTransactions != nullptr) {
+			for each (auto % var in update->AddedTransactions)
+			{
+				this->GameState->AddTransaction(Game::TransactionAddMessage{
+					.ID = var->ID,
+					.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
+					.Price = unwrapDecimal(var->Price),
+					.Quantity = unwrapDecimal(var->Quantity),
+					.Type = (Game::TransactionType)(int32_t)var->Type,
+					.Value = var->Value,
+					.Currency = msclr::interop::marshal_as<std::string>(var->Currency),
+					.Balance = var->Balance,
+					.Period = var->Period,
+					.Tick = var->Tick,
+					.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
+					.TypeInteger = var->TypeInteger,
+					});
+			}
 		}
-		us->AddedTransactions = vec;
-	}
-	if (update->UpdatedLast != nullptr) {
-		auto map = new std::map<std::string, Game::Decimal>();
-		for each (auto% var in update->UpdatedLast)
-		{
-			map->insert({
-				msclr::interop::marshal_as<std::string>(var.Key), var.Value
-			});
+		if (update->UpdatedLast != nullptr) {
+			for each (auto % var in update->UpdatedLast)
+			{
+				this->GameState->UpdateLast(msclr::interop::marshal_as<std::string>(var.Key), var.Value);
+			}
 		}
-		us->UpdatedLast = map;
-	}
-	if (update->UpdatedVWAP != nullptr) {
-		auto map = new std::map<std::string, Game::Decimal>();
-		for each (auto% var in update->UpdatedVWAP)
-		{
-			map->insert({
-				msclr::interop::marshal_as<std::string>(var.Key), var.Value
-			});
+		if (update->UpdatedVWAP != nullptr) {
+			for each (auto % var in update->UpdatedVWAP)
+			{
+				this->GameState->UpdateVWAP(msclr::interop::marshal_as<std::string>(var.Key), var.Value);
+			}
 		}
-		us->UpdatedVWAP = map;
-	}
-	if (update->UpdatedSecurityNLV != nullptr) {
-		auto map = new std::map<std::string, Game::Decimal>();
-		for each (auto % var in update->UpdatedSecurityNLV)
-		{
-			map->insert({
-				msclr::interop::marshal_as<std::string>(var.Key), var.Value
-			});
+		if (update->UpdatedSecurityNLV != nullptr) {
+			for each (auto % var in update->UpdatedSecurityNLV)
+			{
+				this->GameState->UpdateSecurityNLV(msclr::interop::marshal_as<std::string>(var.Key), var.Value);
+			}
 		}
-		us->UpdatedSecurityNLV = map;
-	}
-	if (update->UpdatedSecurityUnrealized != nullptr) {
-		auto map = new std::map<std::string, Game::Decimal>();
-		for each (auto % var in update->UpdatedSecurityUnrealized)
-		{
-			map->insert({
-				msclr::interop::marshal_as<std::string>(var.Key), var.Value
-			});
+		if (update->UpdatedSecurityUnrealized != nullptr) {
+			for each (auto % var in update->UpdatedSecurityUnrealized)
+			{
+				this->GameState->UpdateSecurityUnrealized(msclr::interop::marshal_as<std::string>(var.Key), var.Value);
+			}
 		}
-		us->UpdatedSecurityUnrealized = map;
-	}
-	if (update->AddedTimeAndSales != nullptr) {
-		auto vec = new std::vector<Game::TimeAndSalesUpdateMessage>();
-		for each (auto% var in update->AddedTimeAndSales)
-		{
-			vec->push_back({
-				.ID = var->ID,
-				.Period = var->Period,
-				.Tick = var->Tick,
-				.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
-				.Price = var->Price,
-				.Volume = var->Volume,
-				.Buyer = msclr::interop::marshal_as<std::string>(var->Buyer),
-				.Seller = msclr::interop::marshal_as<std::string>(var->Seller)
-			});
+		if (update->AddedTimeAndSales != nullptr) {
+			for each (auto % var in update->AddedTimeAndSales)
+			{
+				this->GameState->AddTimeAndSales(Game::TimeAndSalesUpdateMessage{
+					.ID = var->ID,
+					.Period = var->Period,
+					.Tick = var->Tick,
+					.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
+					.Price = var->Price,
+					.Volume = var->Volume,
+					.Buyer = msclr::interop::marshal_as<std::string>(var->Buyer),
+					.Seller = msclr::interop::marshal_as<std::string>(var->Seller)
+					});
+			}
 		}
-		us->AddedTimeAndSales = vec;
-	}
-	if (update->UpdatedOTC != nullptr) {
-		// NOTE: This isn't used on the API
-		auto vec = new std::vector<Game::OTCUpdateMessage>();
-		for each (auto% var in update->UpdatedOTC)
-		{
-			vec->push_back({
-				.ID = var->ID,
-				.TraderID = msclr::interop::marshal_as<std::string>(var->TraderID),
-				.Target = msclr::interop::marshal_as<std::string>(var->Target),
-				.Ticker = msclr::interop::marshal_as<std::string>(var->Ticker),
-				.Volume = var->Volume,
-				.PriceOld = var->PriceOld,
-				.Status = (Game::OTCStatus)(int32_t)var->Status,
-				.SettlePeriod = unwrapInt(var->SettlePeriod),
-				.SettleTick = unwrapInt(var->SettleTick),
-				.BreakingTraderID = msclr::interop::marshal_as<std::string>(var->BreakingTraderID),
-				.Price = unwrapDecimal(var->Price),
-				.PriceExpression = msclr::interop::marshal_as<std::string>(var->PriceExpression),
-				.IsTransacted = unwrapBool(var->IsTransacted)
-			});
+		if (update->UpdatedOTC != nullptr) {
+			// NOTE: This isn't used on the API
 		}
-		us->UpdatedOTC = vec;
-	}
-	if (update->UpdatedElectricity != nullptr) {
-		// NOTE: This isn't used by API
-		auto vec = new std::vector<std::pair<int32_t, double>>();
-		for each (auto% var in update->UpdatedElectricity)
-		{
-			vec->push_back({
-				var->Item1, var->Item2	
-			});
+		if (update->UpdatedElectricity != nullptr) {
+			// NOTE: This isn't used by API
 		}
-		us->UpdatedElectricity = vec;
 	}
-	this->StateManager->HandleOrderedUpdate(std::move(us));
+	this->GameState->UpdateFinished();
 }
 
 void Client::SynchronizeOrderedUpdate(TTS::UpdateState^ update) {

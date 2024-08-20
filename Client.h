@@ -20,6 +20,8 @@ private:
 	bool isSynced = false;
 	// Non-owning pointer
 	Game::StateManager* StateManager;
+	// Non-owning pointer
+	Game::GameState* GameState;
 	TTS::IClientService^ Channel = nullptr;
 private:
 	int32_t ExpectedUpdateID = 0;
@@ -30,7 +32,7 @@ private:
 	void HandleSynchronizedUpdate(TTS::UpdateState^ update);
 public:
 	// Ctor
-	Client(Game::StateManager* sm) : StateManager{ sm } {}
+	Client(Game::StateManager* sm, Game::GameState* gm) : StateManager{ sm }, GameState{ gm } {}
 	// Dtor
 	~Client() {
 		delete this->PriorityQueueMutex;

@@ -254,9 +254,59 @@ namespace Game {
 
 	public:
 		// This is synchronized, only one call at a time
-		void HandleOrderedUpdate(std::unique_ptr<Game::UpdateState> state);
-	
-	
+		void HandleOrderedUpdate(std::unique_ptr<Game::UpdateState> state) {}	
+	};
+
+	class GameState {
+		std::mutex updateMutex = std::mutex();
+	public:
+		class UpdateGuard {
+		private:
+			std::mutex* parentMutex;
+			explicit UpdateGuard(std::mutex* parentMutex) : parentMutex{ parentMutex } {
+				this->parentMutex->lock();
+			}
+		public:
+			~UpdateGuard() {
+				this->parentMutex->unlock();
+			}
+			friend class GameState;
+		};
+		UpdateGuard lock() {
+			return UpdateGuard(&this->updateMutex);
+		}
+
+		void AddOrders(const Game::OrderAddMessage& message) {}
+
+		void AddTimeAndSales(const Game::TimeAndSalesUpdateMessage& message) {}
+
+		void UpdateSecurityUnrealized(const std::string& ticker, const Decimal amount) {}
+
+		void UpdateSecurityNLV(const std::string& ticker, const Decimal amount) {}
+
+		void UpdateVWAP(const std::string& ticker, const Decimal amount) {}
+		
+		void UpdateLast(const std::string& ticker, const Decimal amount) {}
+
+		void AddTransaction(const Game::TransactionAddMessage& message) {}
+
+		// This is the new trading limit
+		void UpdateTradingLimits(const std::string& key, const Game::TradingLimitUpdateMessage& message) {}
+
+		// This is the new portfolio
+		void UpdatePortfolio(const std::string& key, const Game::PortfolioUpdateMessage& message) {}
+
+		void AddAssetLogItems(const Game::AssetLogUpdateMessage& message) {}
+
+		void UnleaseAsset(int32_t ID) {}
+
+		void UpdateAsset(const Game::AssetUpdateMessage& message) {}
+
+		void CancelledOrder(int32_t ID) {}
+
+		void UpdatedOrder(const Game::OrderUpdateMessage& message) {}
+
+		void UpdateFinished() {}
 	};
 };
 
